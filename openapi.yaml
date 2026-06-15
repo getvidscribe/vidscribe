@@ -1,0 +1,189 @@
+openapi: 3.1.0
+info:
+  title: VidScribe API
+  version: "1.0.0"
+  description: >-
+    Transcribe videos from a URL. Authenticate with your secret key in the
+    `x-api-key` header. Full docs: https://getvidscribe.com/docs
+  contact:
+    name: VidScribe support
+    url: https://getvidscribe.com/contact
+  license:
+    name: MIT
+servers:
+  - url: https://getvidscribe.com/v1
+    description: Production
+security:
+  - ApiKeyAuth: []
+paths:
+  /transcript:
+    post:
+      summary: Transcribe a video
+      description: >-
+        Short videos (and ones with existing captions) return the transcript
+        with `200`. Long videos return a job to poll with `202`.
+      operationId: createTranscript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranscriptRequest"
+      responses:
+        "200":
+          description: Transcript ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transcript"
+        "202":
+          description: Long video accepted; poll the job id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/TranscribeError" }
+        "429": { $ref: "#/components/responses/Error" }
+    get:
+      summary: Quick transcript (GET)
+      description: One-call GET. Pass the URL as a query parameter; returns plain text.
+      operationId: getTranscript
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema: { type: string, format: uri }
+        - name: text
+          in: query
+          schema: { type: boolean, default: true }
+        - name: lang
+          in: query
+          schema: { type: string, example: en }
+      responses:
+        "200":
+          description: Transcript ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickTranscript"
+        "401": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/TranscribeError" }
+        "429": { $ref: "#/components/responses/Error" }
+  /transcript/{job_id}:
+    get:
+      summary: Poll a job
+      operationId: getJob
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /usage:
+    get:
+      summary: Plan and remaining quota
+      operationId: getUsage
+      responses:
+        "200":
+          description: Current usage
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usage"
+        "401": { $ref: "#/components/responses/Error" }
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+  responses:
+    Error:
+      description: Error with a human-readable message
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail: { type: string }
+    TranscribeError:
+      description: Could not transcribe; includes a machine-readable reason
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: object
+                properties:
+                  error: { type: string }
+                  reason:
+                    type: string
+                    enum: [too_long, not_found, forbidden, bot_check, unsupported, empty, download_error, transcribe_error]
+  schemas:
+    TranscriptRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri, example: "https://youtu.be/VIDEO_ID" }
+        lang: { type: string, example: en, description: Preferred language }
+        mode:
+          type: string
+          enum: [auto, native, generate]
+          default: auto
+          description: "auto = captions else AI; native = captions only; generate = always AI"
+    Transcript:
+      type: object
+      properties:
+        platform: { type: string, example: youtube }
+        transcript: { type: string }
+        language: { type: string, example: en }
+        available_languages:
+          type: array
+          items: { type: string }
+        source:
+          type: string
+          enum: [native, ai]
+          description: "native = existing captions; ai = generated"
+        duration_seconds:
+          type: [integer, "null"]
+    QuickTranscript:
+      type: object
+      properties:
+        content: { type: string }
+        lang: { type: string, example: en }
+        availableLangs:
+          type: array
+          items: { type: string }
+    Job:
+      type: object
+      properties:
+        job_id: { type: integer, example: 5 }
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        platform: { type: string }
+        language: { type: string }
+        source: { type: string, enum: [native, ai] }
+        transcript: { type: [string, "null"] }
+        error: { type: [string, "null"] }
+        duration_seconds: { type: [integer, "null"] }
+    Usage:
+      type: object
+      properties:
+        plan: { type: string, example: pro }
+        requests: { type: integer, example: 42 }
+        monthly_requests_limit: { type: integer, example: 1000 }
+        remaining_requests: { type: integer, example: 958 }
+        seconds_transcribed: { type: integer, example: 18450 }
+        max_minutes: { type: integer, example: 90 }

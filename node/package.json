@@ -1,0 +1,17 @@
+{
+  "name": "vidscribe-node-example",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Transcribe a video with the VidScribe API (Node.js).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node transcribe.js",
+    "server": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

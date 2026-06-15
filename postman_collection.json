@@ -1,0 +1,63 @@
+{
+  "info": {
+    "name": "VidScribe API",
+    "description": "Transcribe videos from a URL. Set the `api_key` and `base_url` collection variables, then run any request. Docs: https://getvidscribe.com/docs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://getvidscribe.com/v1" },
+    { "key": "api_key", "value": "tsk_your_secret_key" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "x-api-key" },
+      { "key": "value", "value": "{{api_key}}" },
+      { "key": "in", "value": "header" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Transcribe a video (POST)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "content-type", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/transcript", "host": ["{{base_url}}"], "path": ["transcript"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://youtu.be/VIDEO_ID\",\n  \"lang\": \"en\",\n  \"mode\": \"auto\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Poll a job (GET)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/transcript/5", "host": ["{{base_url}}"], "path": ["transcript", "5"] }
+      }
+    },
+    {
+      "name": "Quick transcript (GET)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/transcript?url=https://youtu.be/VIDEO_ID&text=true&lang=en",
+          "host": ["{{base_url}}"],
+          "path": ["transcript"],
+          "query": [
+            { "key": "url", "value": "https://youtu.be/VIDEO_ID" },
+            { "key": "text", "value": "true" },
+            { "key": "lang", "value": "en" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Usage (GET)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/usage", "host": ["{{base_url}}"], "path": ["usage"] }
+      }
+    }
+  ]
+}
