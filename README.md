@@ -4,7 +4,7 @@ Ready-to-run examples for the [VidScribe](https://getvidscribe.com) transcriptio
 Send a video URL, get the transcript back as JSON. Short videos return instantly;
 long videos return a job you poll until it is done.
 
-These samples cover **cURL**, **Python**, **Node.js**, and **React**.
+These samples cover **cURL**, **Python**, **PHP**, **Node.js**, **Ruby**, **Go**, and **React**.
 
 ## Get started
 
@@ -26,7 +26,10 @@ These samples cover **cURL**, **Python**, **Node.js**, and **React**.
 | --- | --- |
 | [`curl/`](./curl) | `bash curl/transcribe.sh` |
 | [`python/`](./python) | `pip install -r python/requirements.txt && python python/transcribe.py` |
+| [`php/`](./php) | `php php/transcribe.php` |
 | [`node/`](./node) | `cd node && npm install && npm start` |
+| [`ruby/`](./ruby) | `ruby ruby/transcribe.rb` |
+| [`go/`](./go) | `cd go && go run transcribe.go` |
 | [`react/`](./react) | drop `useTranscript.jsx` into your app (see its README) |
 
 ## The API in 30 seconds
