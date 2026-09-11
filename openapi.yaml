@@ -20,8 +20,11 @@ paths:
     post:
       summary: Transcribe a video
       description: >-
-        Short videos (and ones with existing captions) return the transcript
-        with `200`. Long videos return a job to poll with `202`.
+        Videos with existing captions, and short AI transcriptions (up to about
+        4 minutes of media), return the transcript with `200`. Longer AI
+        transcriptions return `202` with a job to poll, so a request never
+        outlives the HTTP timeout. Handle both. Failed requests are never
+        charged to your quota.
       operationId: createTranscript
       requestBody:
         required: true
@@ -37,14 +40,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/Transcript"
         "202":
-          description: Long video accepted; poll the job id
+          description: Long AI transcription accepted; poll the job id
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Job"
+                $ref: "#/components/schemas/JobAccepted"
         "401": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
-        "422": { $ref: "#/components/responses/TranscribeError" }
+        "422": { $ref: "#/components/responses/Error" }
         "429": { $ref: "#/components/responses/Error" }
     get:
       summary: Quick transcript (GET)
@@ -69,7 +72,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuickTranscript"
         "401": { $ref: "#/components/responses/Error" }
-        "422": { $ref: "#/components/responses/TranscribeError" }
+        "422": { $ref: "#/components/responses/Error" }
         "429": { $ref: "#/components/responses/Error" }
   /transcript/{job_id}:
     get:
@@ -109,15 +112,9 @@ components:
       name: x-api-key
   responses:
     Error:
-      description: Error with a human-readable message
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              detail: { type: string }
-    TranscribeError:
-      description: Could not transcribe; includes a machine-readable reason
+      description: >-
+        Every error has the same shape: a human-readable `error` and a
+        machine-readable `reason`. 429 responses include a Retry-After header.
       content:
         application/json:
           schema:
@@ -129,7 +126,9 @@ components:
                   error: { type: string }
                   reason:
                     type: string
-                    enum: [too_long, not_found, forbidden, bot_check, unsupported, empty, download_error, transcribe_error]
+                    enum: [unauthorized, forbidden, rate_limited, quota_exceeded, too_long, not_found, bot_check, unsupported, empty, download_error, transcribe_error, ai_unavailable, ai_error]
+    TranscribeError:
+      $ref: "#/components/responses/Error"
   schemas:
     TranscriptRequest:
       type: object
@@ -157,6 +156,22 @@ components:
           description: "native = existing captions; ai = generated"
         duration_seconds:
           type: [integer, "null"]
+        segments:
+          type: array
+          description: Timestamped cues (seconds) for building SRT/VTT subtitles
+          items: { $ref: "#/components/schemas/Segment" }
+    Segment:
+      type: object
+      properties:
+        start: { type: number, example: 0.0 }
+        end: { type: number, example: 2.4 }
+        text: { type: string, example: "Hi everyone" }
+    JobAccepted:
+      type: object
+      properties:
+        job_id: { type: integer, example: 5 }
+        status: { type: string, example: queued }
+        poll_url: { type: string, example: /v1/transcript/5 }
     QuickTranscript:
       type: object
       properties:
@@ -176,8 +191,16 @@ components:
         language: { type: string }
         source: { type: string, enum: [native, ai] }
         transcript: { type: [string, "null"] }
-        error: { type: [string, "null"] }
+        segments:
+          type: array
+          items: { $ref: "#/components/schemas/Segment" }
+        available_languages:
+          type: array
+          items: { type: string }
+        error: { type: [string, "null"], description: Set when failed (the request is refunded) }
         duration_seconds: { type: [integer, "null"] }
+        created_at: { type: [string, "null"], format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
     Usage:
       type: object
       properties:

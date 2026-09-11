@@ -38,7 +38,7 @@ Authenticate with your secret key in the `x-api-key` header. Base URL: `https://
 
 | Method | Endpoint | What it does |
 | --- | --- | --- |
-| `POST` | `/v1/transcript` | Transcribe a video. Returns the transcript (`200`) or a job to poll (`202`). |
+| `POST` | `/v1/transcript` | Transcribe a video. Returns the transcript with timestamped `segments` (`200`), or a job to poll (`202`) for long AI transcriptions. |
 | `GET` | `/v1/transcript/{job_id}` | Check a queued job until it is `completed`. |
 | `GET` | `/v1/transcript?url=...&text=true` | Simple one-call GET, returns plain text. |
 | `GET` | `/v1/usage` | Your plan and remaining monthly quota. |
